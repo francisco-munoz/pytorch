@@ -79,7 +79,7 @@ namespace torch {
 enum class ParameterType {
   TENSOR, SCALAR, INT64, DOUBLE, COMPLEX, TENSOR_LIST, INT_LIST, GENERATOR,
   BOOL, STORAGE, PYOBJECT, SCALARTYPE, LAYOUT, MEMORY_FORMAT, DEVICE, STRING,
-  DIMNAME, DIMNAME_LIST, QSCHEME, FLOAT_LIST
+  DIMNAME, DIMNAME_LIST, QSCHEME, FLOAT_LIST, SCALAR_LIST
 };
 
 struct FunctionParameter;
@@ -156,6 +156,7 @@ struct PythonArgs {
   inline at::Tensor tensor(int i);
   inline c10::optional<at::Tensor> optionalTensor(int i);
   inline at::Scalar scalar(int i);
+  inline std::vector<at::Scalar> scalarlist(int i);
   inline at::Scalar scalarWithDefault(int i, at::Scalar default_scalar);
   inline std::vector<at::Tensor> tensorlist(int i);
   template<int N>
@@ -200,6 +201,7 @@ struct PythonArgs {
 private:
   at::Tensor tensor_slow(int i);
   at::Scalar scalar_slow(int i);
+  at::Scalar scalar_slow(PyObject* arg);
 };
 
 struct FunctionParameter {
@@ -278,6 +280,18 @@ inline c10::optional<at::Tensor> PythonArgs::optionalTensor(int i) {
 inline at::Scalar PythonArgs::scalar(int i) {
   if (!args[i]) return signature.params[i].default_scalar;
   return scalar_slow(i);
+}
+
+inline std::vector<at::Scalar> PythonArgs::scalarlist(int i) {
+  auto tuple = six::isTuple(args[i]);
+  THPObjectPtr arg = six::maybeAsTuple(args[i]);
+  auto size = tuple ? PyTuple_GET_SIZE(arg.get()) : PyList_GET_SIZE(arg.get());
+  std::vector<at::Scalar> res(size);
+  for (int idx = 0; idx < size; idx++) {
+    PyObject* obj = tuple ? PyTuple_GET_ITEM(arg.get(), idx) : PyList_GET_ITEM(arg.get(), idx);
+    res[idx] = scalar_slow(obj);
+  }
+  return res;
 }
 
 inline at::Scalar PythonArgs::scalarWithDefault(int i, at::Scalar default_scalar) {
