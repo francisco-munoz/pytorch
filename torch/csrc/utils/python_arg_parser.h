@@ -283,6 +283,7 @@ inline at::Scalar PythonArgs::scalar(int i) {
 }
 
 inline std::vector<at::Scalar> PythonArgs::scalarlist(int i) {
+  if (!args[i]) return std::vector<at::Scalar>();
   auto tuple = six::isTuple(args[i]);
   THPObjectPtr arg = six::maybeAsTuple(args[i]);
   auto size = tuple ? PyTuple_GET_SIZE(arg.get()) : PyList_GET_SIZE(arg.get());

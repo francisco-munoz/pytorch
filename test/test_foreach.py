@@ -63,8 +63,8 @@ class TestForeach(TestCase):
         alpha = 2
 
         expected = [torch_op(tensors1[i], torch.mul(tensors2[i], alpha)) for i in range(N)]
-        res = foreach_op(tensors1, tensors2, alpha)
-        foreach_op_(tensors1, tensors2, alpha)
+        res = foreach_op(tensors1, tensors2, alpha=alpha)
+        foreach_op_(tensors1, tensors2, alpha=alpha)
         self.assertEqual(res, tensors1)
 
         if dtype == torch.bool:
